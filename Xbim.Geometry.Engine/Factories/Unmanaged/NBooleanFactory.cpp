@@ -9,6 +9,10 @@
 #include <ShapeFix_Shape.hxx>
 #include <BRepCheck_Analyzer.hxx>
 
+#include <ShapeUpgrade_UnifySameDomain.hxx>
+#include <BRep_Tool.hxx>
+#include <ShapeFix_ShapeTolerance.hxx>
+
 bool NBooleanFactory::IsEmpty(const TopoDS_Shape& shape)
 {
 	return shape.IsNull() || shape.NbChildren() == 0;
@@ -99,6 +103,68 @@ TopoDS_Shape NBooleanFactory::PerformBoolean(const TopoDS_ListOfShape& arguments
 	//try and operate
 	try
 	{
+		ShapeFix_ShapeTolerance FTol;
+		Standard_Real toleranceNew = 0.1;
+		Standard_Real fuzzyTolerance = 0.1;
+
+		TopExp_Explorer faceExplorerOri(tools.First(), TopAbs_FACE);
+		const TopoDS_Face& faceOri = TopoDS::Face(faceExplorerOri.Current());
+		Standard_Real faceToleranceOri = BRep_Tool::Tolerance(faceOri);
+
+		for (TopoDS_Shape& iSolid : arguments)
+		{
+			ShapeUpgrade_UnifySameDomain unifier(iSolid);
+			unifier.Build();
+			iSolid = unifier.Shape();
+
+			//ShapeFix_Shape 
+			Handle(ShapeFix_Shape) fixer = new ShapeFix_Shape(iSolid);
+			fixer->SetPrecision(toleranceNew);
+			fixer->SetMaxTolerance(toleranceNew);
+
+			Handle(ShapeFix_Wire) wireFixer = fixer->FixWireTool();
+			wireFixer->ModifyGeometryMode() = Standard_True;
+			wireFixer->ModifyTopologyMode() = Standard_True;
+			wireFixer->SetPrecision(toleranceNew);
+			wireFixer->ClosedWireMode() = Standard_True;
+			wireFixer->FixConnectedMode() = Standard_True;
+			Handle(ShapeFix_Face) faceFixer = fixer->FixFaceTool();
+			faceFixer->FixOrientationMode() = Standard_True;
+
+			fixer->Perform();
+			iSolid = fixer->Shape();
+			FTol.LimitTolerance(iSolid, toleranceNew);
+
+		}
+
+		for (TopoDS_Shape& tSolid : tools)
+		{
+			ShapeUpgrade_UnifySameDomain unifier(tSolid);
+			unifier.Build();
+			tSolid = unifier.Shape();
+
+			//ShapeFix_Shape
+			Handle(ShapeFix_Shape) fixer = new ShapeFix_Shape(tSolid);
+			fixer->SetPrecision(toleranceNew);
+			fixer->SetMaxTolerance(toleranceNew);
+			Handle(ShapeFix_Wire) wireFixer = fixer->FixWireTool();
+			wireFixer->ModifyGeometryMode() = Standard_True;
+			wireFixer->ModifyTopologyMode() = Standard_True;
+			wireFixer->SetPrecision(toleranceNew);
+			wireFixer->ClosedWireMode() = Standard_True;
+			wireFixer->FixConnectedMode() = Standard_True;
+			Handle(ShapeFix_Face) faceFixer = fixer->FixFaceTool();
+			faceFixer->FixOrientationMode() = Standard_True;
+			fixer->Perform();
+			tSolid = fixer->Shape();
+
+			FTol.LimitTolerance(tSolid, toleranceNew);
+		}
+
+		TopExp_Explorer faceExplorer(tools.First(), TopAbs_FACE);
+		const TopoDS_Face& face = TopoDS::Face(faceExplorer.Current());
+		Standard_Real faceTolerance = BRep_Tool::Tolerance(face);
+
 		hasWarnings = false;
 		BRepAlgoAPI_BooleanOperation bop;
 		bop.SetArguments(arguments);
@@ -140,11 +206,11 @@ TopoDS_Shape NBooleanFactory::PerformBoolean(const TopoDS_ListOfShape& arguments
 			{
 				bop.SimplifyResult(true, true, Precision::Angular());
 			}
-			
+
 			//if we have a self intersection acquired it means one of the input shapes had a self intersection, fix up the input shapes and repeat, if we have not tried to do so before
 			if (bop.DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection)) && !attemptingFix)
 			{
-				
+
 				TopoDS_ListOfShape fixedArguments;
 				TopoDS_ListOfShape fixedTools;
 				bool fixPossible = false;
@@ -170,13 +236,37 @@ TopoDS_Shape NBooleanFactory::PerformBoolean(const TopoDS_ListOfShape& arguments
 					else
 						fixedTools.Append(tool);
 				}
-				if(fixPossible)
+				if (fixPossible)
 					return PerformBoolean(fixedArguments, fixedTools, fuzzyTolerance, operation, hasWarnings, true);
 
 			}
-			if(attemptingFix)
+			if (attemptingFix)
 				pLoggingService->LogDebug("Self-intersection of sub-shapes in the Boolean Operations output results has been fixed.");
-			return TrimTopology(bop.Shape());
+			
+			//return TrimTopology(bop.Shape());
+
+			TopoDS_Shape finalResult = TrimTopology(bop.Shape());
+
+			//ShapeUpgrade_UnifySameDomain unifier(result);
+			//unifier.Build();
+			//result = unifier.Shape();
+
+			//
+			//Handle(ShapeFix_Shape) fixer = new ShapeFix_Shape(result);
+			//fixer->SetPrecision(toleranceNew);
+			//fixer->SetMaxTolerance(toleranceNew);
+			//Handle(ShapeFix_Wire) wireFixer = fixer->FixWireTool();
+			//wireFixer->ModifyGeometryMode() = Standard_True;
+			//wireFixer->ModifyTopologyMode() = Standard_True;
+			//wireFixer->SetPrecision(toleranceNew);
+			//wireFixer->ClosedWireMode() = Standard_True;
+			//wireFixer->FixConnectedMode() = Standard_True;
+			//Handle(ShapeFix_Face) faceFixer = fixer->FixFaceTool();
+			//faceFixer->FixOrientationMode() = Standard_True;
+			//fixer->Perform();
+			//result = fixer->Shape();
+
+			return finalResult;
 		}
 	}
 	catch (const Standard_Failure& e)
