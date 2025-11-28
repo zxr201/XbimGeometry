@@ -15,7 +15,7 @@ namespace Xbim.ModelGeometry.Scene.Extensions
         /// <returns></returns>
         public static bool IsBodyRepresentation(this IIfcRepresentation rep, HashSet<string> supportedRepresentations)
         {
-            if (string.IsNullOrEmpty(rep.RepresentationIdentifier)) return false;
+            if (string.IsNullOrEmpty(rep.RepresentationIdentifier)) return true;
             string repIdentifier = rep.RepresentationIdentifier.Value;
             //if it is defined as body then it is candidate but exclude if it is using a line base representation
             

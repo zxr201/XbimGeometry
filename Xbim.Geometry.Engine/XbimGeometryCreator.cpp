@@ -65,7 +65,7 @@ namespace Xbim
 				case TopAbs_VERTEX:
 					return gcnew XbimVertex(TopoDS::Vertex(result));
 				case TopAbs_EDGE:
-					return gcnew XbimEdge(TopoDS::Edge(result),_modelService);
+					return gcnew XbimEdge(TopoDS::Edge(result), _modelService);
 				case TopAbs_WIRE:
 					return gcnew XbimWire(TopoDS::Wire(result), _modelService);
 				case TopAbs_FACE:
@@ -94,13 +94,13 @@ namespace Xbim
 		XbimGeometryCreator::XbimGeometryCreator(IModel^ model, ILoggerFactory^ loggerFactory)
 		{
 			_logger = LoggerFactoryExtensions::CreateLogger<XbimGeometryCreator^>(loggerFactory);
-			
+
 			Dictionary<System::String^, System::Object^>^ scope = gcnew Dictionary<System::String^, System::Object^>();
 			scope->Add("OriginatingSystem", model->Header->FileName->OriginatingSystem);
 			scope->Add("CreatedBy", model->Header->CreatingApplication);
 			scope->Add("IfcVersion", model->Header->SchemaVersion);
 			_loggerScope = _logger->BeginScope(scope);
-			
+
 			_modelService = gcnew ModelGeometryService(model, loggerFactory);
 			Xbim::Geometry::Abstractions::Extensions::IXModelExtensions::AddTagValue(model, "ModelGeometryService", _modelService);
 		}
@@ -134,7 +134,7 @@ namespace Xbim
 			if (!logger->IsEnabled(logLevel))
 				return;
 
-			
+
 			if (entity == nullptr)
 			{
 				LoggerExtensions::Log(logger, logLevel, "GeomEngine: - " + format, args);
@@ -323,6 +323,12 @@ namespace Xbim
 					XbimSolidSet^ solidSet = (XbimSolidSet^)CreateSolidSet((IIfcCsgSolid^)geomRep, _logger);
 					if (objectLocation != nullptr) solidSet->Move(objectLocation);
 					return Trim(solidSet);
+				}
+				else if (dynamic_cast<IIfcBlock^>(geomRep))
+				{
+					XbimSolid^ solid = (XbimSolid^)CreateSolid((IIfcBlock^)geomRep, _logger);
+					if (objectLocation != nullptr) solid->Move(objectLocation);
+					return solid;
 				}
 				else if (dynamic_cast<IIfcSphere^>(geomRep))
 				{
@@ -964,7 +970,7 @@ namespace Xbim
 		};
 
 		IXbimGeometryObjectSet^ XbimGeometryCreator::CreateGeometryObjectSet() {
-			return gcnew XbimGeometryObjectSet( _modelService);
+			return gcnew XbimGeometryObjectSet(_modelService);
 		};
 
 #pragma region Write Functions
@@ -1094,7 +1100,7 @@ namespace Xbim
 			if (comp->Solids->Count > 0)
 				return comp->Solids->First;
 			else
-				return gcnew XbimSolid( _modelService);
+				return gcnew XbimSolid(_modelService);
 		}
 		IXbimSolid^ XbimGeometryCreator::CreateSolid(IIfcAdvancedBrepWithVoids^ ifcSolid, ILogger^)
 		{

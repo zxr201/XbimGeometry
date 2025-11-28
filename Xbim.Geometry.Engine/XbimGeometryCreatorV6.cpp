@@ -93,7 +93,7 @@ namespace Xbim
 					if (!location.IsIdentity()) shape.Move(location);
 					if (shape.ShapeType() == TopAbs_COMPOUND)
 						return gcnew XbimSolidSet(shape, this);
-					else if(shape.ShapeType() == TopAbs_SOLID)
+					else if (shape.ShapeType() == TopAbs_SOLID)
 						return gcnew XbimSolid(TopoDS::Solid(shape), this);
 					else
 						throw RaiseGeometryServiceException("IfcSolidModel returned incorrect shape result", geomRep);
@@ -138,7 +138,7 @@ namespace Xbim
 						return gcnew XbimFace(TopoDS::Face(shape), this);
 					else
 						throw RaiseGeometryServiceException("IfcShellBasedSurfaceModel returned incorrect shape result", geomRep);
-					
+
 				}
 				else if (dynamic_cast<IIfcTriangulatedFaceSet^>(geomRep))
 				{
@@ -215,6 +215,12 @@ namespace Xbim
 					XbimSolidSet^ solidSet = (XbimSolidSet^)CreateSolidSet((IIfcCsgSolid^)geomRep, Logger());
 					if (objectLocation != nullptr) solidSet->Move(objectLocation);
 					return Trim(solidSet);
+				}
+				else if (dynamic_cast<IIfcBlock^>(geomRep))
+				{
+					XbimSolid^ solid = (XbimSolid^)CreateSolid((IIfcBlock^)geomRep, Logger());
+					if (objectLocation != nullptr) solid->Move(objectLocation);
+					return solid;
 				}
 				else if (dynamic_cast<IIfcSphere^>(geomRep))
 				{
@@ -802,7 +808,7 @@ namespace Xbim
 			array<System::Byte>^ bytes = WexBimMeshFactory->CreateWexBimMesh(xShape, tolerance, deflection, angle, 1, bounds);
 			bw->Write(bytes);
 		}
-		  
+
 
 		XbimShapeGeometry^ XbimGeometryCreatorV6::CreateShapeGeometry(IXbimGeometryObject^ geometryObject, double precision, double deflection, double angle, XbimGeometryType storageType, ILogger^ /*logger*/)
 		{
@@ -845,7 +851,7 @@ namespace Xbim
 
 		XbimMatrix3D XbimGeometryCreatorV6::ToMatrix3D(IIfcObjectPlacement^ objPlacement, ILogger^)
 		{
-			Ifc4x3::GeometricConstraintResource::IfcLinearPlacement^  linearPlacement = 
+			Ifc4x3::GeometricConstraintResource::IfcLinearPlacement^ linearPlacement =
 				dynamic_cast<Ifc4x3::GeometricConstraintResource::IfcLinearPlacement^>(objPlacement);
 
 			if (linearPlacement)
@@ -853,7 +859,7 @@ namespace Xbim
 				IXLocation^ xLoc = GeometryFactory->BuildLocation(linearPlacement);
 
 				return XbimMatrix3D
-				   (xLoc->M11, xLoc->M12, xLoc->M13, 0,
+				(xLoc->M11, xLoc->M12, xLoc->M13, 0,
 					xLoc->M21, xLoc->M22, xLoc->M23, 0,
 					xLoc->M31, xLoc->M32, xLoc->M33, 0,
 					xLoc->Translation->X, xLoc->Translation->Y, xLoc->Translation->Z, 1);
@@ -1161,7 +1167,7 @@ namespace Xbim
 #pragma endregion
 
 #pragma region BRep Read and Write
-		
+
 		void XbimGeometryCreatorV6::WriteBrep(System::String^ fileName, IXbimGeometryObject^ geometryObject)
 		{
 			XbimOccWriter::Write(geometryObject, fileName);
@@ -1205,7 +1211,7 @@ namespace Xbim
 				System::Runtime::InteropServices::Marshal::FreeHGlobal(System::IntPtr((void*)fName));
 			}
 		}
-		
+
 #pragma endregion
 
 
