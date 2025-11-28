@@ -350,7 +350,17 @@ namespace Xbim
 							{
 								auto start = seg->StartPoint();
 								auto end = seg->EndPoint();
-								msg.AppendFormat("({0},{1},{2}) -> ({3},{4},{5}) \t\tGAP {6}\n", start.X(), start.Y(), start.Z(), end.X(), end.Y(), end.Z(), Math::Round(lastPnt.Distance(start), 3));
+								auto gap = Math::Round(lastPnt.Distance(start), 3);
+								auto str = "(" +
+									start.X().ToString() + "," +
+									start.Y().ToString() + "," +
+									start.Z().ToString() + ") -> (" +
+									end.X().ToString() + "," +
+									end.Y().ToString() + "," +
+									end.Z().ToString() +
+									") \t\tGAP " +
+									gap.ToString() + "\n";
+								msg.AppendFormat(str);
 								lastPnt = end;
 
 							}

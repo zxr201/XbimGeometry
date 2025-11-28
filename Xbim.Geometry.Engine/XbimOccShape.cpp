@@ -133,7 +133,14 @@ namespace Xbim
 				faceIndex++;
 			}
 			// Write out header
-			textWriter->WriteLine(System::String::Format("P {0} {1} {2} {3} {4}", 1, points->Count, faces->Count, triangleCount, normals->Count));
+			auto msg =
+				"P " +
+				"1" + " " +
+				points->Count.ToString() + " " +
+				faces->Count.ToString() + " " +
+				triangleCount.ToString() + " " +
+				normals->Count.ToString();
+			textWriter->WriteLine(msg);
 			//write out vertices and normals  
 			textWriter->Write("V");
 			for each (XbimPoint3D p in points) textWriter->Write(System::String::Format(" {0},{1},{2}", p.X, p.Y, p.Z));
@@ -165,11 +172,25 @@ namespace Xbim
 						mesh->Triangle(i).Get(t[0], t[1], t[2]);
 					if (isPlanar)
 						if (i == 1)
-							textWriter->Write(System::String::Format(" {0}/{3},{1},{2}", nodeLookup[t[0] - 1], nodeLookup[t[1] - 1], nodeLookup[t[2] - 1], norms[0]));
+						{
+							auto str = " " +
+								nodeLookup[t[0] - 1].ToString() + "/" +
+								norms[0].ToString() + "," +
+								nodeLookup[t[1] - 1].ToString() + "," +
+								nodeLookup[t[2] - 1].ToString();
+							textWriter->Write(str);
+						}
 						else
 							textWriter->Write(System::String::Format(" {0},{1},{2}", nodeLookup[t[0] - 1], nodeLookup[t[1] - 1], nodeLookup[t[2] - 1]));
 					else //need to write every one
-						textWriter->Write(System::String::Format(" {0}/{3},{1}/{4},{2}/{5}", nodeLookup[t[0] - 1], nodeLookup[t[1] - 1], nodeLookup[t[2] - 1], norms[t[0] - 1], norms[t[1] - 1], norms[t[2] - 1]));
+					{
+						auto str =
+							" " +
+							nodeLookup[t[0] - 1].ToString() + "/" + norms[t[0] - 1].ToString() + "," +
+							nodeLookup[t[1] - 1].ToString() + "/" + norms[t[1] - 1].ToString() + "," +
+							nodeLookup[t[2] - 1].ToString() + "/" + norms[t[2] - 1].ToString();
+						textWriter->Write(str);
+					}
 				}
 				faceIndex++;
 				textWriter->WriteLine();
