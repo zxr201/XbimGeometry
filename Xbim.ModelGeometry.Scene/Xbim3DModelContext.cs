@@ -753,6 +753,7 @@ namespace Xbim.ModelGeometry.Scene
             Func<XbimTriangulatedMesh, int, XbimTriangulatedMesh> postTessellationCallback = null,
             DynamicDeflectionSettings dynamicDeflectionSettings = null)
         {
+            _logger.LogInformation("selfCompileTest-6");
             _logger.LogTrace("Starting creation of model scene");
             //NB we no longer support creation of  geometry storage other than binary, other code remains for reading but not writing 
             var geomStorageType = XbimGeometryType.PolyhedronBinary;
@@ -1522,6 +1523,7 @@ namespace Xbim.ModelGeometry.Scene
                     if (contextHelper.GenerateFullGeometry == false && ShouldTesselateShapeDirectly(shapeMetaData, xbimTessellator)) // if we can mesh the shape directly just do it
                     {
                         shapeGeom = xbimTessellator.Mesh(shape);
+                        _logger.LogInformation("#{0} mesh directly done", shape.EntityLabel);
                     }
                     else //we need to create a geometry object
                     {
@@ -1563,7 +1565,9 @@ namespace Xbim.ModelGeometry.Scene
                                 (deflection, deflectionAngle) = (def.Linear, def.Angular);
                             }
                             
+                            _logger.LogInformation("#{0} CreateShapeGeometry start", shape.EntityLabel);
                             shapeGeom = Engine.CreateShapeGeometry(geomModel, precision, deflection, deflectionAngle, geomStorageType, _logger);
+                            _logger.LogInformation("#{0} CreateShapeGeometry done", shape.EntityLabel);
                             if (shapeMetaData.IsFeatureElementShape)
                             {
                                 if (geomModel is IXbimGeometryObjectSet geomSet)
