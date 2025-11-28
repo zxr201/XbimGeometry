@@ -97,9 +97,9 @@ TopoDS_Wire NProfileFactory::MakeValidAreaProfileWire(const TopoDS_Wire& wire, b
 			return wire;
 		}
 	}
-	
+
 	ShapeFix_Shape faceFixer(tmpFace);
-	
+
 	if (faceFixer.Perform())
 	{
 		if (faceFixer.Shape().ShapeType() == TopAbs_COMPOUND || faceFixer.Shape().ShapeType() == TopAbs_SHELL)
@@ -109,17 +109,17 @@ TopoDS_Wire NProfileFactory::MakeValidAreaProfileWire(const TopoDS_Wire& wire, b
 			double area = 0;
 			for (TopExp_Explorer shellExp(faceFixer.Shape(), TopAbs_FACE); shellExp.More(); shellExp.Next())
 			{
-				auto&& currentFace = TopoDS::Face(shellExp.Current());		
+				auto&& currentFace = TopoDS::Face(shellExp.Current());
 				double thisArea = getArea(currentFace);
 				double absArea = std::abs(thisArea);
-				if(absArea > area)
+				if (absArea > area)
 				{
 					area = thisArea;
 					fixed = currentFace;
 					isCounterClockwise = thisArea > 0;
 				}
-			}	
-			if (area < Precision::Approximation()) 
+			}
+			if (area < Precision::Approximation())
 				return TopoDS_Wire();
 			else
 				return BRepTools::OuterWire(fixed);
@@ -128,20 +128,20 @@ TopoDS_Wire NProfileFactory::MakeValidAreaProfileWire(const TopoDS_Wire& wire, b
 		{
 			tmpFace = TopoDS::Face(faceFixer.Shape());
 			double thisArea = getArea(tmpFace);
-			if (std::abs(thisArea) < Precision::Approximation()) 
+			if (std::abs(thisArea) < Precision::Approximation())
 				return TopoDS_Wire();
 			else
 			{
 				isCounterClockwise = thisArea > 0;
-				return BRepTools::OuterWire( tmpFace); //in this test we only expect an outer, holes are not valid and ignored
+				return BRepTools::OuterWire(tmpFace); //in this test we only expect an outer, holes are not valid and ignored
 			}
 		}
-			 
+
 		else
 			Standard_Failure::Raise("Error fixing profile wire");
 	}
 	double thisArea = getArea(tmpFace);
-	if (std::abs(thisArea) < Precision::Approximation()) 
+	if (std::abs(thisArea) < Precision::Approximation())
 		return TopoDS_Wire();
 	isCounterClockwise = thisArea > 0;
 	return wire;
@@ -889,7 +889,7 @@ TopoDS_Wire NProfileFactory::BuildLShape(double depth, double width, double thic
 		wire.Closed(true);
 		if (!location.IsIdentity())
 			wire.Move(location);
-		
+
 		//removed not in Ifc4
 		/*if (profile->CentreOfGravityInX.HasValue || profile->CentreOfGravityInY.HasValue)
 		{
@@ -1015,19 +1015,52 @@ TopoDS_Wire NProfileFactory::BuildTShape(double flangeWidth, double depth, doubl
 	}
 	return TopoDS_Wire();
 }
-TopoDS_Wire NProfileFactory::BuildTrapezium(double bottomDimX, double topDimX, double dimY,double topOffsetX, const TopLoc_Location& location)
+TopoDS_Wire NProfileFactory::BuildTrapezium(double bottomDimX, double topDimX, double dimY, double topOffsetX, const TopLoc_Location& location)
 {
 	try
 	{
-		double xOffTopLeft = -((bottomDimX / 2) + topOffsetX);
-		double xOffTopRight = topDimX;
-		double xOffBottomLeft = -(bottomDimX / 2);
-		double xOffBottomRight = (bottomDimX / 2);
-		double yOff = dimY / 2;
-		gp_Pnt bl(xOffBottomLeft, -yOff, 0);
-		gp_Pnt br(xOffBottomRight, -yOff, 0);
-		gp_Pnt tr(xOffTopRight, yOff, 0);
-		gp_Pnt tl(xOffTopLeft, yOff, 0);
+		//double xOffTopLeft = -((bottomDimX / 2) + topOffsetX);
+		//double xOffTopRight = topDimX;
+		//double xOffBottomLeft = -(bottomDimX / 2);
+		//double xOffBottomRight = (bottomDimX / 2);
+		//double yOff = dimY / 2;
+		//gp_Pnt bl(xOffBottomLeft, -yOff, 0);
+		//gp_Pnt br(xOffBottomRight, -yOff, 0);
+		//gp_Pnt tr(xOffTopRight, yOff, 0);
+		//gp_Pnt tl(xOffTopLeft, yOff, 0);
+		//Handle(Geom_TrimmedCurve) aSeg1 = GC_MakeSegment(bl, br);
+		//Handle(Geom_TrimmedCurve) aSeg2 = GC_MakeSegment(br, tr);
+		//Handle(Geom_TrimmedCurve) aSeg3 = GC_MakeSegment(tr, tl);
+		//Handle(Geom_TrimmedCurve) aSeg4 = GC_MakeSegment(tl, bl);
+		//TopoDS_Edge e1 = BRepBuilderAPI_MakeEdge(aSeg1);
+		//TopoDS_Edge e2 = BRepBuilderAPI_MakeEdge(aSeg2);
+		//TopoDS_Edge e3 = BRepBuilderAPI_MakeEdge(aSeg3);
+		//TopoDS_Edge e4 = BRepBuilderAPI_MakeEdge(aSeg4);
+		//TopoDS_Wire wire = BRepBuilderAPI_MakeWire(e1, e2, e3, e4);
+		//wire.Closed(true);
+		//wire.Checked(true);
+		////apply the position transformation
+		//if (!location.IsIdentity()) wire.Move(location);
+		//return wire;
+
+		double x = bottomDimX / 2;
+		double y = dimY / 2;
+		double topXDim = topDimX;
+		double topXoff = topOffsetX;
+
+		//difference trap decode, it should be use x_offset, but most of parsers don¡¯t calculate it that way
+		/*double x_offset = ((Min(topXoff, 0.) + Max(topXDim + topXoff, x * 2)) / 2) - x;
+
+		gp_Pnt bl(-x - x_offset, -y, 0);
+		gp_Pnt br(x - x_offset, -y, 0);
+		gp_Pnt tr(-x + topXDim + topXoff - x_offset, y, 0);
+		gp_Pnt tl(-x + topXoff - x_offset, y, 0);*/
+
+		gp_Pnt bl(-x, -y, 0);
+		gp_Pnt br(x, -y, 0);
+		gp_Pnt tr(-x + topXDim + topXoff, y, 0);
+		gp_Pnt tl(-x + topXoff, y, 0);
+
 		Handle(Geom_TrimmedCurve) aSeg1 = GC_MakeSegment(bl, br);
 		Handle(Geom_TrimmedCurve) aSeg2 = GC_MakeSegment(br, tr);
 		Handle(Geom_TrimmedCurve) aSeg3 = GC_MakeSegment(tr, tl);
@@ -1037,10 +1070,12 @@ TopoDS_Wire NProfileFactory::BuildTrapezium(double bottomDimX, double topDimX, d
 		TopoDS_Edge e3 = BRepBuilderAPI_MakeEdge(aSeg3);
 		TopoDS_Edge e4 = BRepBuilderAPI_MakeEdge(aSeg4);
 		TopoDS_Wire wire = BRepBuilderAPI_MakeWire(e1, e2, e3, e4);
+
 		wire.Closed(true);
 		wire.Checked(true);
-		//apply the position transformation
-		if (!location.IsIdentity()) wire.Move(location);
+		if (!location.IsIdentity())
+			wire.Move(location);
+
 		return wire;
 	}
 	catch (const Standard_Failure& sf)
